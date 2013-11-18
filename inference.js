@@ -7,6 +7,13 @@
  *		Are Some PLURAL-NOUN PLURAL-NOUN?
  *		Are Noe PLURAL-NOUN PLURAL-NOUN?
  *		Describe PLURAL-NOUN.
+ *
+ *
+ * TODO:
+ *		transitive descriptions
+ *		conflicting truths	
+ *
+ * 
  */
 
 (function(){
@@ -79,25 +86,57 @@
 	ObjectMap.prototype.query = function(query,relation){
 		if(relation === "all"){
 			if( in_array(query,this.are) ){
-				return "yes, all "+ query + " are " + this.thing;
+				return "yes, all "+ this.thing + " are " + query;
 			} else {
-				return "no, not all "+ query + " are " + this.thing;
+				return "no, not all "+ this.thing + " are " +query;
 			}
 		} else if (relation === "no"){
 			if( in_array(query,this.not) ){
-				return "yes, no "+ query + " are " + this.thing;
+				return "yes, no "+ this.thing+ " are " + query;
 			} else {
-				return "no, some "+ query + " are " + this.thing;
+				return "no, some "+ this.thing+ " are " + query;
 			}
 		} else if (relation === "some"){
 			if( in_array(query,this.may) ){
-				return "yes, some "+ query + " are " + this.thing;
+				return "yes, some "+ this.thing + " are " +query;
 			} else {
-				return "no, not all "+ query + " are " + this.thing;
+				return "no, not all "+ this.thing + " are " + query;
 			}
 		}
 
 		return "I cant tell quite yet";
+	};
+
+	ObjectMap.prototype.transitiveQuery = function(query,relation){
+		if(relation === "all"){
+			if( in_array(query,this.are) ){
+				return 1;
+			} else {
+				for(var i = 0; i < this.are.length; i++){
+					return _i.findOrAdd(this.are[i]).transitiveQuery(query,relation);
+				}
+				return -1;
+			}
+		} else if (relation === "no"){
+			if( in_array(query,this.not) ){
+				return 1;
+			} else {
+				for(var i = 0; i < this.not.length; i++){
+					return _i.findOrAdd(this.not[i]).transitiveQuery(query,relation);
+				}
+				return -1;
+			}
+		} else if (relation === "some"){
+			if( in_array(query,this.may) ){
+				return 1;
+			} else {
+				for(var i = 0; i < this.may.length; i++){
+					return _i.findOrAdd(this.may[i]).transitiveQuery(query,relation);
+				}
+				return -1;
+			}
+		}
+		return 0;
 	};
 
 	InferenceEngine = function(){
@@ -109,11 +148,11 @@
 	};
 
 	InferenceEngine.prototype.statement = function(statement) {
-		console.log(' statement: "'+statement)+'"';
+		console.log(' statement: "'+statement+'"');
 		var blocks = statement.split(" ");
 		clean(blocks);
 		if( this.checkQuerySyntax(blocks) === true){
-			return console.log(this.query(blocks[2],blocks[1],blocks[3]));
+			return console.log(this.tQuery(blocks[2],blocks[1],blocks[3]));
 		} else if( this.checkDescSyntax(blocks) === true){
 			return printlist(this.describe(blocks[1]));
 		} else if(this.checkAddSyntax(blocks) === true){
@@ -154,6 +193,17 @@
 		return this.findOrAdd(object).query(query,relation);
 	};
 
+	InferenceEngine.prototype.tQuery = function(object, relation, query){
+		var retVal = this.findOrAdd(object).transitiveQuery(query,relation);
+		if( retVal === 0){
+			return "I dont have enough information to go off of...";
+		} else if (retVal === 1){
+			return "Yes, " + relation + " " + object + " are " + query;
+		} else if (retVal === -1){
+			return "No, " + (relation === "no" ? "some" : "not all") + " " + object + " are " + query;
+		}
+	};
+
 	InferenceEngine.prototype.describe = function(object){
 		var subject = this.findOrAdd(object);
 		var list = [];
@@ -172,47 +222,45 @@
 	window._i = new InferenceEngine();
 
 
-_i.statement("All mammals are hairy.");
+	_i.statement("All mammals are hairy.");
 // OK.
-_i.statement("All dogs are mammals.");
+	_i.statement("All dogs are mammals.");
 // OK.
-_i.statement("All beagles are dogs.");
+	_i.statement("All beagles are dogs.");
 // OK.
-_i.statement("Are all beagles hairy?");
+	_i.statement("Are all beagles hairy?");
 // Yes, all beagles are hairy animals.
-_i.statement("All cats are mammals.");
+	_i.statement("All cats are mammals.");
 // OK.
-_i.statement("All cats are hairy.");
+	_i.statement("All cats are hairy.");
 // I know.
-_i.statement("Are all cats dogs?");
+	_i.statement("Are all cats dogs?");
 // I don't know.
-_i.statement("No cats are dogs.");
+	_i.statement("No cats are dogs.");
 // OK.
-_i.statement("Are all cats dogs?");
+	_i.statement("Are all cats dogs?");
 // No, not all cats are dogs.
-_i.statement("Are no cats dogs?");
+	_i.statement("Are no cats dogs?");
 // Yes, no cats are dogs.
-_i.statement("All mammals are dogs.");
+	_i.statement("All mammals are dogs.");
 // Sorry, that contradicts what I already know.
-_i.statement("Some mammals are brown.");
+	_i.statement("Some mammals are brown.");
 // OK.
-_i.statement("Are any mammals dogs?");
+	_i.statement("Are some mammals dogs?");
 // Yes, some mammals are dogs.
-_i.statement("Are any dogs brown?");
+	_i.statement("Are some dogs brown?");
 // I don't know.
-_i.statement("Some dogs are brown.");
+	_i.statement("Some dogs are brown.");
 // OK.
-_i.statement("All brown are brown.");
-// OK.
-_i.statement("Are any dogs browns?");
+	_i.statement("Are some dogs brown?");
 // Yes, some dogs are brown things.
-_i.statement("Describe dogs.");
+	_i.statement("Describe dogs.");
 // All dogs are mammals.
 // All dogs are hairy animals.
 // No dogs are cats.
 // Some dogs are beagles.
 // Some dogs are brown animals.
 // Some dogs are brown things.
-_i.statement("Are all goldfish mammals?");
+	_i.statement("Are all goldfish mammals?");
 // I don't know anything about goldfish.
 })();
