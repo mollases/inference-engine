@@ -9,14 +9,26 @@
  *		Describe PLURAL-NOUN.
  *
  *
- * TODO:
+ *	TODO:
  *		transitive descriptions
  *		conflicting truths	
  *
+ *
+ *	a <= b  ==  all b are a
+ *	a <- b  ==  some b are a
+ *	a </ b  ==  no b are a
+ * 
+ *	Tree Structure:
+ *		Mammals <= Dogs <= Beagles </ Poodles
  * 
  */
 
 (function(){
+
+	function clog (argument) {
+		console.log(argument);
+		$("#log").append("<p>"+argument+"</p>");
+	}
 
 	function in_array(needle, haystack){
 		for(var key in haystack){
@@ -37,7 +49,17 @@
 
 	function printlist(list){
 		for(var key in list){
-			console.log(list[key]);
+			clog(list[key]);
+		}
+	}
+
+	function swapRelationalWord(word){
+		if(word === "all"){
+			return "no";
+		} else if(word === "no"){
+			return "all";
+		} else {
+			return word;
 		}
 	}
 
@@ -65,48 +87,34 @@
 	};
 
 	ObjectMap.prototype.relation = function(relation,thing){
-		var gotIt = false;
+		var msg = "Something went wrong adding the relation";
 		if(relation === "all"){
-			this.are.push(thing);
-			gotIt = true;
-		} else if (relation === "no"){
-			this.not.push(thing);
-			gotIt = true;
-		} else if (relation === "some"){
-			this.may.push(thing);
-			gotIt = true;
-		}
-		if(gotIt === true){
-			return "Got it";
-		} else {
-			return "Something went wrong adding the relation";
-		}
-	};
-
-	ObjectMap.prototype.query = function(query,relation){
-		if(relation === "all"){
-			if( in_array(query,this.are) ){
-				return "yes, all "+ this.thing + " are " + query;
+			if(!in_array(thing,this.are)){
+				msg = "OK";
+				this.are.push(thing);
 			} else {
-				return "no, not all "+ this.thing + " are " +query;
+				msg = "I already knew that";
 			}
 		} else if (relation === "no"){
-			if( in_array(query,this.not) ){
-				return "yes, no "+ this.thing+ " are " + query;
+			if(!in_array(thing,this.not)){
+				msg = "OK";
+				this.not.push(thing);
 			} else {
-				return "no, some "+ this.thing+ " are " + query;
+				msg = "I already knew that";
 			}
 		} else if (relation === "some"){
-			if( in_array(query,this.may) ){
-				return "yes, some "+ this.thing + " are " +query;
+			if(!in_array(thing,this.may)){
+				msg = "OK";
+				this.may.push(thing);
 			} else {
-				return "no, not all "+ this.thing + " are " + query;
+				msg = "I already knew that";
 			}
 		}
-
-		return "I cant tell quite yet";
+		return msg;
 	};
 
+
+// all can be worked on
 	ObjectMap.prototype.transitiveQuery = function(query,relation){
 		if(relation === "all"){
 			if( in_array(query,this.are) ){
@@ -115,7 +123,6 @@
 				for(var i = 0; i < this.are.length; i++){
 					return _i.findOrAdd(this.are[i]).transitiveQuery(query,relation);
 				}
-				return -1;
 			}
 		} else if (relation === "no"){
 			if( in_array(query,this.not) ){
@@ -133,10 +140,13 @@
 				for(var i = 0; i < this.may.length; i++){
 					return _i.findOrAdd(this.may[i]).transitiveQuery(query,relation);
 				}
-				return -1;
 			}
 		}
 		return 0;
+	};
+
+	ObjectMap.prototype.containsInfoOn = function(subject){
+		return in_array(subject,this.are.concat(this.may.concat(this.not)));
 	};
 
 	InferenceEngine = function(){
@@ -148,17 +158,23 @@
 	};
 
 	InferenceEngine.prototype.statement = function(statement) {
-		console.log(' statement: "'+statement+'"');
+		clog(' statement: "'+statement+'"');
 		var blocks = statement.split(" ");
 		clean(blocks);
 		if( this.checkQuerySyntax(blocks) === true){
-			return console.log(this.tQuery(blocks[2],blocks[1],blocks[3]));
+			return clog(this.tQuery(blocks[2],blocks[1],blocks[3]));
 		} else if( this.checkDescSyntax(blocks) === true){
 			return printlist(this.describe(blocks[1]));
 		} else if(this.checkAddSyntax(blocks) === true){
-			return console.log(this.findOrAdd(blocks[1]).relation(blocks[0],blocks[3]));
+			var obj = this.findOrAdd(blocks[1]);
+			var relative = this.findOrAdd(blocks[3]);
+			if(relative.transitiveQuery(blocks[0],obj) === 0){
+				return clog(obj.relation(blocks[0],blocks[3]));
+			} else {
+				return clog("?");
+			}
 		}
-		return console.log("Illegal syntax, please review manual '"+statement+"'");
+		return clog("Invalid syntax: '"+statement+"'");
 	};
 
 	InferenceEngine.prototype.checkFirst = function(blocks){
@@ -187,10 +203,6 @@
 			this.stateTree[object] = new ObjectMap(object);
 		}
 		return this.stateTree[object];
-	};
-
-	InferenceEngine.prototype.query = function(object, relation, query){
-		return this.findOrAdd(object).query(query,relation);
 	};
 
 	InferenceEngine.prototype.tQuery = function(object, relation, query){
@@ -223,21 +235,14 @@
 
 
 	_i.statement("All mammals are hairy.");
-// OK.
 	_i.statement("All dogs are mammals.");
-// OK.
 	_i.statement("All beagles are dogs.");
-// OK.
 	_i.statement("Are all beagles hairy?");
-// Yes, all beagles are hairy animals.
 	_i.statement("All cats are mammals.");
-// OK.
 	_i.statement("All cats are hairy.");
-// I know.
 	_i.statement("Are all cats dogs?");
 // I don't know.
 	_i.statement("No cats are dogs.");
-// OK.
 	_i.statement("Are all cats dogs?");
 // No, not all cats are dogs.
 	_i.statement("Are no cats dogs?");
@@ -245,18 +250,16 @@
 	_i.statement("All mammals are dogs.");
 // Sorry, that contradicts what I already know.
 	_i.statement("Some mammals are brown.");
-// OK.
 	_i.statement("Are some mammals dogs?");
 // Yes, some mammals are dogs.
 	_i.statement("Are some dogs brown?");
 // I don't know.
 	_i.statement("Some dogs are brown.");
-// OK.
 	_i.statement("Are some dogs brown?");
-// Yes, some dogs are brown things.
+// Yes, some dogs are brown.
 	_i.statement("Describe dogs.");
 // All dogs are mammals.
-// All dogs are hairy animals.
+// All dogs are hairy.
 // No dogs are cats.
 // Some dogs are beagles.
 // Some dogs are brown animals.
