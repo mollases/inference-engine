@@ -89,7 +89,9 @@
 	ObjectMap.prototype.relation = function(relation,thing){
 		var msg = "Something went wrong adding the relation";
 		if(relation === "all"){
-			if(!in_array(thing,this.are)){
+			if(_i.tQuery(thing,relation,this.thing,true) === 1){
+				msg = "That is a conflicting statement";
+			} else if(!in_array(thing,this.are)){
 				msg = "OK";
 				this.are.push(thing);
 			} else {
@@ -205,8 +207,9 @@
 		return this.stateTree[object];
 	};
 
-	InferenceEngine.prototype.tQuery = function(object, relation, query){
+	InferenceEngine.prototype.tQuery = function(object, relation, query,num){
 		var retVal = this.findOrAdd(object).transitiveQuery(query,relation);
+		if(num === true) return retVal;
 		if( retVal === 0){
 			return "I dont have enough information to go off of...";
 		} else if (retVal === 1){
