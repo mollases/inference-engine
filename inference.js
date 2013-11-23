@@ -25,11 +25,22 @@
 
 (function(){
 
+	/**
+	 * Alias to console.log, as well as adding a statement to the #log on the web page
+	 * @param  {string} argument what you want to log
+	 * @return {}
+	 */
 	function clog (argument) {
 		console.log(argument);
 		$("#log").append("<p>"+argument+"</p>");
 	}
 
+	/**
+	 * looks for a needle within a haystack, one level deep
+	 * @param  {object} needle   what is being asked for
+	 * @param  {array}  haystack where to look
+	 * @return {boolean}          returns if object was found
+	 */
 	function in_array(needle, haystack){
 		for(var key in haystack){
 			if(needle === haystack[key]){
@@ -39,6 +50,12 @@
 		return false;
 	}
 
+	/**
+	 * given an array, remove non letters, and set letters to lower case
+	 * This allows the parser to lessen its scope
+	 * @param  {array} arr array of string to parse over
+	 * @return {}     
+	 */
 	function clean(arr){
 		for(var key in arr){
 			var statement = arr[key];
@@ -47,6 +64,11 @@
 		}
 	}
 
+	/**
+	 * prints everythin in the given list, assumes list contains strings
+	 * @param  {array[string]} list array to print
+	 * @return {}      
+	 */
 	function printlist(list){
 		for(var key in list){
 			clog(list[key]);
@@ -63,6 +85,10 @@
 		}
 	}
 
+	/**
+	 * Node in the object graph
+	 * @param {string} object noun
+	 */
 	ObjectMap = function(object){
 		this.thing = object;
 		this.are = [];
@@ -70,6 +96,10 @@
 		this.not = [];
 	};
 
+	/**
+	 * getter of noun
+	 * @return {string} noun that this ObjectMap was initialized with
+	 */
 	ObjectMap.prototype.getSubject = function(){
 		return this.thing;
 	};
