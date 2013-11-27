@@ -5,7 +5,7 @@
  *		Some PLURAL-NOUN are PLURAL-NOUN.
  *		Are All PLURAL-NOUN PLURAL-NOUN?
  *		Are Some PLURAL-NOUN PLURAL-NOUN?
- *		Are Noe PLURAL-NOUN PLURAL-NOUN?
+ *		Are No PLURAL-NOUN PLURAL-NOUN?
  *		Describe PLURAL-NOUN.
  *
  *
@@ -24,6 +24,23 @@
  */
 
 (function(){
+
+
+	/**
+	 * http://stackoverflow.com/a/1961068 unique array elements
+	 * @return {[type]} [description]
+	 */
+	 function getUnique (arr){
+		var u = {}, a = [];
+		for(var i = 0, l = arr.length; i < l; ++i){
+			if(u.hasOwnProperty(arr[i])) {
+				continue;
+			}
+			a.push(arr[i]);
+			u[arr[i]] = 1;
+		}
+		return a;
+	};
 
 	/**
 	 * Alias to console.log, as well as adding a statement to the #log on the web page
@@ -249,23 +266,29 @@
 		}
 	};
 
-	InferenceEngine.prototype.describe = function(object){
+	InferenceEngine.prototype.describe = function(object, topQuery){
 		var subject = this.findOrAdd(object);
 		var list = [];
+
+		var noun= topQuery || object;
 		for(var i = 0; i < subject.getAres().length; i ++){
-			list.push("All " + object + " are "+ subject.getAres()[i] + ".");
+			list.push("All " + noun + " are "+ subject.getAres()[i] + ".");
+			list = list.concat(_i.describe(subject.getAres()[i],noun));
 		}
 		for(var i = 0; i < subject.getMays().length; i ++){
-			list.push("Some " + object + " are "+ subject.getMays()[i] + ".");
+			list.push("Some " + noun + " are "+ subject.getMays()[i] + ".");
+			list = list.concat(_i.describe(subject.getMays()[i],noun));
 		}
 		for(var i = 0; i < subject.getNots().length; i ++){
-			list.push("No " + object + " are "+ subject.getNots()[i] + ".");
+			list.push("No " + noun + " are "+ subject.getNots()[i] + ".");
+			list = list.concat(_i.describe(subject.getNots()[i],noun));
 		}
+		list = getUnique(list);
 		return list;
 	};
 
 	window._i = new InferenceEngine();
-
+})();
 
 	_i.statement("All mammals are hairy.");
 	_i.statement("All dogs are mammals.");
@@ -299,4 +322,19 @@
 // Some dogs are brown things.
 	_i.statement("Are all goldfish mammals?");
 // I don't know anything about goldfish.
-})();
+
+
+/**
+ * All mammals are hairy
+ * all dogs are mammals
+ * all beagles are dogs
+ * some dogs are gray
+ * no mammals are blue
+ * describe dogs
+ *	all dogs are mammals
+ *  all dogs are hairy
+ *	no dogs are blue
+ *	some dogs are beagles
+ *	some dogs are gray
+ * 
+ */
