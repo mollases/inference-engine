@@ -47,9 +47,9 @@
 	 * @param  {string} argument what you want to log
 	 * @return {}
 	 */
-	function clog (argument) {
+	function clog (argument,classes) {
 		console.log(argument);
-		$("#log").append("<p>"+argument+"</p>");
+		$("#log").prepend("<div class='message "+classes+"'>"+argument+"</div>");
 	}
 
 	/**
@@ -207,7 +207,7 @@
 	};
 
 	InferenceEngine.prototype.statement = function(statement) {
-		clog(' statement: "'+statement+'"');
+		clog(statement,'statement');
 		var blocks = statement.split(" ");
 		clean(blocks);
 		if( this.checkQuerySyntax(blocks) === true){
